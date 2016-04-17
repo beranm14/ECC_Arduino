@@ -338,6 +338,34 @@ void addPoints(Point * P, Point * Q, Point * R){
     copyPoly(R->y,rsl);
 }
 
+char weierstrass(unsigned char * x, unsigned char * y){
+//left
+    unsigned char cpy[SIZE];
+    copyPoly(cpy, y);
+    square(cpy); // y^2
+    unsigned char mulres[SIZE];
+    cleanPoly(mulres);
+    mulRed(x , y, mulres);
+    add(mulres, cpy); // y^2 + xy
+//right
+    unsigned char cpx[SIZE];
+    copyPoly(cpx, x);
+    square(cpx);
+    unsigned char mulcpx[SIZE];
+    cleanPoly(mulcpx);
+    mulRed(cpx, x, mulcpx); // x^3
+    unsigned char mulcpa[SIZE];
+    cleanPoly(mulcpa);
+    mulRed(cpx, POLA, mulcpa); // a*x^2
+    add(mulcpx, mulcpa); // x^3 + a*x^2
+    add(mulcpx, POLB); // x^3 + a*x^2 + b
+    printA(mulres);
+    printA(mulcpx);
+    if(isEqualPoly(mulcpx,mulres))
+        return 1;
+    return 0;
+}
+
 void setup() {
   Serial.begin(9600);
   while (!Serial) {
@@ -350,6 +378,8 @@ void printA(unsigned char * a){
         Serial.write(a[i]);
     }
 }
+
+Point R;
 
 void loop() {
 
@@ -403,7 +433,6 @@ void loop() {
         copyPoly(P.y,P_y);
         copyPoly(Q.x,Q_x);
         copyPoly(Q.y,Q_y);        
-        Point R;
         cleanPoly(R.x);
         cleanPoly(R.y);
         addPoints(&P, &Q, &R);
@@ -411,6 +440,9 @@ void loop() {
           Serial.write(R.x[i]);
         for(byte i = 0; i < 10; i++)
           Serial.write(R.y[i]);
+      }else if(keyk == 0x06){
+        // adding
+        weierstrass(R.x, R.y);
       }
    }
 }

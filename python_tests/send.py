@@ -87,6 +87,14 @@ ts = port.read(20)
 print "Rx: ", ", ".join("{:02x}".format(ord(c)) for c in ts[0:10])
 print "Ry: ", ", ".join("{:02x}".format(ord(c)) for c in ts[10:20])
 
+print "Weierstrass test"
+port.write(b"\x06")
+ts = port.read(20)
+#print "Recieved: ", ts
+print "left  : ", ", ".join("{:02x}".format(ord(c)) for c in ts[0:10])
+print "right : ", ", ".join("{:02x}".format(ord(c)) for c in ts[10:20])
+
+
 print "P + P"
 
 # předání P_x
@@ -159,6 +167,13 @@ ts = port.read(20)
 print "Rx: ", ", ".join("{:02x}".format(ord(c)) for c in ts[0:10])
 print "Ry: ", ", ".join("{:02x}".format(ord(c)) for c in ts[10:20])
 
+
+print "Weierstrass test"
+port.write(b"\x06")
+ts = port.read(20)
+#print "Recieved: ", ts
+print "left  : ", ", ".join("{:02x}".format(ord(c)) for c in ts[0:10])
+print "right : ", ", ".join("{:02x}".format(ord(c)) for c in ts[10:20])
 
 
  # ot

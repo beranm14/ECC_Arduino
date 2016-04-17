@@ -383,23 +383,6 @@ char weierstrass(unsigned char * x, unsigned char * y){
     unsigned char mulcpx[SIZE];
     cleanPoly(mulcpx);
     mulRed(cpx, x, mulcpx); // x^3
-    /*cout << endl << "triplex: ";
-    printA(mulcpx);
-    cout << endl;
-
-    unsigned char mulcxxx[SIZE];
-    cleanPoly(mulcxxx);
-    unsigned char mulcxdx[SIZE];
-    cleanPoly(mulcxdx);
-    unsigned char ctx[SIZE];
-    copyPoly(ctx, x);
-    mulRed(ctx, x, mulcxxx);
-    mulRed(mulcxxx, x, mulcxdx);
-    cout << endl << "triplex: ";
-    printA(mulcxdx);
-    cout << endl;*/
-
-
     unsigned char mulcpa[SIZE];
     cleanPoly(mulcpa);
     mulRed(cpx, POLA, mulcpa); // a*x^2
