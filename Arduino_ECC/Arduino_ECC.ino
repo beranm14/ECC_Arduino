@@ -11,6 +11,10 @@ unsigned char  Q_y[SIZE] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0
 unsigned char  R_x[SIZE] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 unsigned char  R_y[SIZE] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
+// infinities
+unsigned char  I_x[SIZE] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+unsigned char  I_y[SIZE] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
 
 class Point{
     public:
@@ -72,16 +76,18 @@ unsigned int getHighBit(unsigned char * a){
     return l;
 }
 
-unsigned char * copyPoly(unsigned char * a, unsigned char * b){
-    for(unsigned char i = 0; i < SIZE; i++){
+inline unsigned char * copyPoly(unsigned char * a, unsigned char * b){
+  memcpy(a,b,SIZE);
+   /* for(unsigned char i = 0; i < SIZE; i++){
         a[i] = b[i];
-    }
-    return a;
+    }*/
+  return a;
 }
-void cleanPoly(unsigned char * a){
-    for(unsigned char i = 0; i < SIZE; i++){
+inline void cleanPoly(unsigned char * a){
+  memset(a, 0, SIZE);
+  /*  for(unsigned char i = 0; i < SIZE; i++){
         a[i] = 0;
-    }
+    }*/
 }
 
 unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char * res){
@@ -169,12 +175,13 @@ unsigned char isBiggerThanOne(unsigned char * b){
     return 0;
 }
 
-unsigned char isEqualPoly(unsigned char * a, unsigned char * b){
-    for(unsigned char i = 0; i < SIZE; i++){
+inline unsigned char isEqualPoly(unsigned char * a, unsigned char * b){
+    return memcmp(a,b,SIZE) == 0;
+    /*for(unsigned char i = 0; i < SIZE; i++){
         if(a[i] != b[i])
             return false;
     }
-    return true;
+    return true;*/
 }
 
 
@@ -287,7 +294,37 @@ unsigned char * square(unsigned char * a){
     return a;
 }
 
+unsigned char isInfinity(Point * P){
+  return isEqualPoly(I_x,P->x) && isEqualPoly(I_y,P->y);
+}
+
+inline bool isNeg(Point *p, Point *q)
+{
+    Point tmp;
+    memcpy(tmp.x, q->x, SIZE);
+    memcpy(tmp.y, q->y, SIZE);
+    unsigned char tmx[SIZE];
+    cleanPoly(tmx);
+    copyPoly(tmx,tmp.x);
+
+    memcpy(tmp.y, add(tmx, tmp.y), SIZE);
+    return (memcmp(tmp.x, p->x, SIZE) == 0 && memcmp(tmp.y, p->y, SIZE) == 0);
+}
+
 void addPoints(Point * P, Point * Q, Point * R){
+    if(isInfinity(P)){
+        copyPoly(R->x, Q->x);
+        copyPoly(R->y, Q->y);
+        return;
+    }else if(isInfinity(Q)){
+        copyPoly(R->x, P->x);
+        copyPoly(R->y, P->y);
+        return;        
+    }else if(isNeg(P,Q) || isNeg(Q,P)){
+        copyPoly(R->x, I_x);
+        copyPoly(R->y, I_y);
+        return;
+    }
     unsigned char lambda[SIZE];
     if (isEqualPoly(P->x, Q->x) && isEqualPoly(P->y, Q->y)){ // P == Q
         unsigned char inv_qx[SIZE];
