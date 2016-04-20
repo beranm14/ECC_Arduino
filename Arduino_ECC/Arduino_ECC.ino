@@ -1,5 +1,6 @@
 #define SIZE (20)
 
+
 unsigned char POLA[SIZE] = { 0x5F, 0x38, 0x4C, 0x7F, 0x6D, 0xF6, 0xA8, 0x38, 0x2E, 0x4A };
 unsigned char POLB[SIZE] = { 0xA7, 0x68, 0x3D, 0xC0, 0xEC, 0x6B, 0x1C, 0xB3, 0x0B, 0x2C };
 unsigned char p[SIZE] = { 0x01, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 };
@@ -15,14 +16,13 @@ unsigned char  R_y[SIZE] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0
 unsigned char  I_x[SIZE] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 unsigned char  I_y[SIZE] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
-
 class Point{
     public:
         unsigned char x[SIZE];
         unsigned char y[SIZE];
 };
 
-unsigned char * add(unsigned char * a, unsigned char * b, unsigned char from = 0){
+inline unsigned char * add(unsigned char * a, unsigned char * b, unsigned char from = 0){
     for(unsigned char i = from; i < SIZE; i++){
         a[i] = a[i] ^ b[i];
     }
@@ -30,7 +30,7 @@ unsigned char * add(unsigned char * a, unsigned char * b, unsigned char from = 0
 }
 
 
-bool isNotZero(unsigned char * a){
+inline bool isNotZero(unsigned char * a){
     for(unsigned char i = 0; i < SIZE; i++){
         if (a[i] != 0)
             return true;
@@ -38,7 +38,7 @@ bool isNotZero(unsigned char * a){
     return false;
 }
 
-void shiftLeft(unsigned char * a, unsigned char k = SIZE){
+inline void shiftLeft(unsigned char * a, unsigned char k = SIZE){
     unsigned char tmp = 0;
     for (unsigned char j = 0 ; j < k; j++){
         unsigned char tmr = a[j] & 0x80;
@@ -49,7 +49,7 @@ void shiftLeft(unsigned char * a, unsigned char k = SIZE){
     }
 }
 
-unsigned char isZero(unsigned char * a){
+inline unsigned char isZero(unsigned char * a){
     for(unsigned char i = 0; i < SIZE; i++){
         if(a[i] != 0){
             return false;
@@ -148,7 +148,7 @@ void divMod(unsigned char * a, unsigned char * b, unsigned char * m, unsigned ch
     copyPoly(a,tmp_a);
 }
 
-unsigned char isOne(unsigned char * b){
+inline unsigned char isOne(unsigned char * b){
     for(unsigned char i = 1; i < SIZE; i++){
         if(b[i] != 0)
             return 0;
@@ -158,14 +158,27 @@ unsigned char isOne(unsigned char * b){
     return 0;
 }
 
-unsigned char * reduce(unsigned char * b){
-    unsigned char m[SIZE], q[SIZE];
-    divMod(b, p, m, q);
-    copyPoly(b,m);
-    return b;
+unsigned char * reduce(unsigned char * c){
+    unsigned char up, down, tmp, i;
+    for (i = SIZE - 1; i >= SIZE/2; i--) {
+        up = ((c[i] << 0x01) & 0xFE);
+        down = ((c[i - 1] >> 7) & 0x01);
+        tmp = (up ^ down);
+        up = ((tmp >> 7) & 0x01);
+        down = ((tmp << 1) & 0xFE);
+        c[i - 8] ^= up;
+        c[i - 9] ^= down;
+        c[i - 10] ^= tmp;
+    }
+    c[SIZE/2 - 1] &= 0x7F;
+    i = SIZE;
+    down = ((c[i - 1] >> 7) & 0x01);
+    for(i=SIZE/2;i<SIZE;i++)
+        c[i] = 0;
+    return c;
 }
 
-unsigned char isBiggerThanOne(unsigned char * b){
+inline unsigned char isBiggerThanOne(unsigned char * b){
     for(unsigned char i = 1; i < SIZE; i++){
         if(b[i] != 0)
             return 1;
@@ -294,7 +307,7 @@ unsigned char * square(unsigned char * a){
     return a;
 }
 
-unsigned char isInfinity(Point * P){
+inline unsigned char isInfinity(Point * P){
   return isEqualPoly(I_x,P->x) && isEqualPoly(I_y,P->y);
 }
 
