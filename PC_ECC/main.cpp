@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include "rs232.h"
 #define SIZE ((20))
 
@@ -510,9 +511,13 @@ void copyParts(unsigned char * a, unsigned char * b, unsigned char sz){
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-    int usbtty = 17;
+    if(argc < 2){
+        cout << "None port given" << endl;
+        return 1;
+    }
+    int usbtty = atoi(argv[argc-1]);
     char mode[]={'8','N','1',0};
     if(RS232_OpenComport(usbtty, 9600, mode)){
         cout << "Port can't opened" << endl;
@@ -557,7 +562,7 @@ int main()
             if (out[0] == 0x33){
                 cout << "Just sync" << endl;
             }else{
-                cout << (unsigned int) n;
+                cout << dec << (unsigned int) n;
                 cout << " got response" << endl;
                 break;
             }
@@ -578,6 +583,24 @@ int main()
         RS232_SendByte(usbtty, tmpA.x[i]);
     for(unsigned char i = 0; i < 10; i++)
         RS232_SendByte(usbtty, tmpA.y[i]);
+    cout << "Wating for ACK of sended tmpA" << endl;
+    while(1){
+        n = RS232_PollComport(usbtty, out, 20);
+        out[n] = '\0';
+        if(n!=0){
+            if (out[0] == 0x33){
+                cout << "Just sync" << endl;
+            }else{
+                cout << dec << (unsigned int) n;
+                cout << " got response" << endl;
+                break;
+            }
+        }
+        sleep(1);
+    }
+    for(unsigned char i=0; i<20; i++)
+        cout << " " << hex << (unsigned int) out[i] << dec;
+    cout << endl;
     cout << "Counting K" << endl;
     doubleAndAdd(Ka, &tmpB, 10);
     cout << "K" << endl;

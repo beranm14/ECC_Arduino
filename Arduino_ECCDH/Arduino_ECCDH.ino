@@ -500,18 +500,27 @@ void loop() {
           Serial.write(tmpA.y[i]);
       }else if(keyk == 0x11){
         Point tmpB;
+        cleanPoly(tmpB.x);
+        cleanPoly(tmpB.y);
         byte cn = 0;
         while (cn < 10){
           if (!Serial.available())
             continue;
           tmpB.x[cn] = Serial.read();   
+          cn ++;
         }
         cn = 0;
         while (cn < 10){
           if (!Serial.available())
             continue;
           tmpB.y[cn] = Serial.read();
+          cn ++;
         }
+        for(byte i = 0; i < 10; i++)
+          Serial.write(tmpB.x[i]);
+        for(byte i = 0; i < 10; i++)
+          Serial.write(tmpB.y[i]);
+          
         doubleAndAdd(Ka, &tmpB);
         copyPoly(Key.x,tmpB.x);
         copyPoly(Key.y,tmpB.y);
