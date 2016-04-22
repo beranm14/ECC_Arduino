@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string.h>
+#include <unistd.h>
+#include "rs232.h"
 #define SIZE ((20))
 
 using namespace std;
@@ -318,14 +320,14 @@ inline unsigned char inverseBit(unsigned char a){
     return res;
 }
 
-unsigned char * inversBitsInPoly(unsigned char * a){
-    unsigned char sz = SIZE / 2;
-    unsigned char result[SIZE / 2];
+unsigned char * inversBitsInPoly(unsigned char * a, unsigned char sizz = 10){
+    unsigned char sz = sizz;
+    unsigned char result[10];
     cleanPoly(result);
     unsigned char k = sz - 1;
     for(unsigned char i = 0; i < sz; i ++){
         result[k] = a[i];
-        //result[k] = inverseBit(result[k]);
+        result[k] = inverseBit(result[k]);
         k --;
     }
     copyPoly(a,result);
@@ -473,6 +475,9 @@ unsigned char subsone(unsigned char * numb, unsigned int sz){
 }
 
 void doubleAndAdd(unsigned char * numb, Point * P, unsigned char sznum){
+    Point MP;
+    copyPoly(MP.x, P->x);
+    copyPoly(MP.y, P->y);
     Point Q;
     cleanPoly(Q.x);
     cleanPoly(Q.y);
@@ -482,238 +487,122 @@ void doubleAndAdd(unsigned char * numb, Point * P, unsigned char sznum){
                 Point tmpA;
                 cleanPoly(tmpA.x);
                 cleanPoly(tmpA.y);
-                addPoints(P, &Q, &tmpA);
+                addPoints(&MP, &Q, &tmpA);
                 copyPoly(Q.x,tmpA.x);
                 copyPoly(Q.y,tmpA.y);
-                //cout << hex << (int) j << endl;
-            }else{
-                Point tmpA;
-                copyPoly(tmpA.x, P->x);
-                copyPoly(tmpA.y, P->y);
-                Point tmpB;
-                copyPoly(tmpB.x, P->x);
-                copyPoly(tmpB.y, P->y);
-                addPoints(&tmpB, &tmpA, P);
             }
+            Point tmpA;
+            copyPoly(tmpA.x, MP.x);
+            copyPoly(tmpA.y, MP.y);
+            Point tmpB;
+            copyPoly(tmpB.x, MP.x);
+            copyPoly(tmpB.y, MP.y);
+            addPoints(&tmpB, &tmpA, &MP);
         }
     }
     copyPoly(P->x,Q.x);
     copyPoly(P->y,Q.y);
 }
 
+void copyParts(unsigned char * a, unsigned char * b, unsigned char sz){
+    for(unsigned char i = 0+sz*10; i < 10+sz*10; i++){
+        a[i-sz*10] = b[i];
+    }
+}
+
 int main()
 {
-/*unsigned char toreda[SIZE] = { 0xFF,  0xFF,  0xFF,  0xFF, 0xA7, 0xA7, 0x68, 0x3D, 0xC0, 0xEC, 0x6B, 0x1C, 0xB3, 0x0B, 0x2C };
-reduce(toreda);
-printA(toreda);
-unsigned char toredb[SIZE] = { 0xFF,  0xFF,  0xFF,  0xFF, 0xA7, 0xA7, 0x68, 0x3D, 0xC0, 0xEC, 0x6B, 0x1C, 0xB3, 0x0B, 0x2C };
-reduceChg(toredb);
-printA(toredb);
-
-*/
-// declare
+    int usbtty = 17;
+    char mode[]={'8','N','1',0};
+    if(RS232_OpenComport(usbtty, 9600, mode)){
+        cout << "Port can't opened" << endl;
+        return(0);
+    }
+    cout << "Port opened" << endl;
+// syncing with duino
+    int n = 0;
+    unsigned char out[21];
+    cleanPoly(out);
+    RS232_SendByte(usbtty, 0x33);
+    while(1){
+        n = RS232_PollComport(usbtty, out, 20);
+        out[n] = '\0';
+        if(n!=0){
+            cout << hex << (unsigned int) out[0];
+            cout << " synced" << endl;
+            break;
+        }
+        sleep(1);
+        RS232_SendByte(usbtty, 0x33);
+    }
+// call from DH start
+    cout << "Counting our Pa and sendig Duino command to start as well" << endl;
+    RS232_SendByte(usbtty, 0x10);
     Point Pa;
     copyPoly(Pa.x,x_P);
     copyPoly(Pa.y,y_P);
-    unsigned char Ka[2] = { 0xff , 0xf1 }; //, 0xf1 };
-    Point Pb;
-    copyPoly(Pb.x,x_P);
-    copyPoly(Pb.y,y_P);
-    unsigned char Kb[2] = { 0xff , 0x0f }; //, 0xf1 };
-// count A
-    //cout << "==================" << endl;
+    unsigned char Ka[10] = { 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12}; //, 0xf1 };
     Point tmpA;
-    copyPoly(tmpA.x,Pa.x);
-    copyPoly(tmpA.y,Pa.y);
-    doubleAndAdd(Ka,&tmpA,1);
-    /*
-    Point tmpA;
-    copyPoly(tmpA.x,x_P);
-    copyPoly(tmpA.y,y_P);
-    unsigned char Katmp[1];
-    memcpy(Katmp,Ka,1);
-    while(!subsone(Katmp,1)){
-        Point R;
-        cleanPoly(R.x);
-        cleanPoly(R.y);
-        addPoints(&Pa,&tmpA,&R);
-        copyPoly(tmpA.x,R.x);
-        copyPoly(tmpA.y,R.y);
-    }
+    copyPoly(tmpA.x, Pa.x);
+    copyPoly(tmpA.y, Pa.y);
+    doubleAndAdd(Ka, &tmpA, 10);
     printA(tmpA.x);
-    printA(tmpA.y);*/
-    //cout << "==================" << endl;
-    //return 0;
-// count B
-    Point tmpB;
-    copyPoly(tmpB.x,Pa.x);
-    copyPoly(tmpB.y,Pa.y);
-    doubleAndAdd(Kb,&tmpB,1);
-/*
-    Point tmpB;
-    copyPoly(tmpB.x,x_P);
-    copyPoly(tmpB.y,y_P);
-    unsigned char Kbtmp[2];
-    memcpy(Kbtmp,Kb,2);
-    while(!subsone(Kbtmp,2)){
-        Point R;
-        cleanPoly(R.x);
-        cleanPoly(R.y);
-        addPoints(&Pb,&tmpB,&R);
-        copyPoly(tmpB.x,R.x);
-        copyPoly(tmpB.y,R.y);
-    }*/
-// count KA
-    doubleAndAdd(Ka,&tmpB,1);
-/*
-    memcpy(Katmp,Ka,2);
-    while(!subsone(Katmp,2)){
-        Point R;
-        cleanPoly(R.x);
-        cleanPoly(R.y);
-        addPoints(&Pb,&tmpB,&R);
-        copyPoly(tmpB.x,R.x);
-        copyPoly(tmpB.y,R.y);
-    }*/
-// count KB
-    doubleAndAdd(Kb,&tmpA,1);
-/*
-    memcpy(Kbtmp,Kb,2);
-    while(!subsone(Kbtmp,2)){
-        Point R;
-        cleanPoly(R.x);
-        cleanPoly(R.y);
-        addPoints(&Pb,&tmpA,&R);
-        copyPoly(tmpA.x,R.x);
-        copyPoly(tmpA.y,R.y);
+    printA(tmpA.y);
+    cleanPoly(out);
+    cout << "Waiting fo Duino to finnish" << endl;
+    while(1){
+        n = RS232_PollComport(usbtty, out, 20);
+        out[n] = '\0';
+        if(n!=0){
+            if (out[0] == 0x33){
+                cout << "Just sync" << endl;
+            }else{
+                cout << (unsigned int) n;
+                cout << " got response" << endl;
+                break;
+            }
+        }
+        sleep(1);
     }
-*/
-// cout
-cout << "=====================" << endl;
-cout << "KBx ";
-printA(tmpA.x);
-cout << "KBy ";
-printA(tmpA.y);
-cout << "=====================" << endl;
-cout << "KAx ";
-printA(tmpB.x);
-cout << "KAy ";
-printA(tmpB.y);
+    Point tmpB;
+    cleanPoly(tmpB.x);
+    cleanPoly(tmpB.y);
+    copyParts(tmpB.x,out,0);
+    copyParts(tmpB.y,out,1);
+    cout << "Duino response" << endl;
+    printA(tmpB.x);
+    printA(tmpB.y);
+    cout << "Counting K and asking Duino to do the same" << endl;
+    RS232_SendByte(usbtty, 0x11);
+    for(unsigned char i = 0; i < 10; i++)
+        RS232_SendByte(usbtty, tmpA.x[i]);
+    for(unsigned char i = 0; i < 10; i++)
+        RS232_SendByte(usbtty, tmpA.y[i]);
+    cout << "Counting K" << endl;
+    doubleAndAdd(Ka, &tmpB, 10);
+    cout << "K" << endl;
+    printA(tmpB.x);
+    printA(tmpB.y);
+
+    cout << "Waiting fo Duino to finnish" << endl;
+    while(1){
+        n = RS232_PollComport(usbtty, out, 20);
+        out[n] = '\0';
+        if(n!=0){
+            cout << (unsigned int) n;
+            cout << " got response" << endl;
+            break;
+        }
+        sleep(1);
+    }
+    Point tmpC;
+    cleanPoly(tmpC.x);
+    cleanPoly(tmpC.y);
+    copyParts(tmpC.x,out,0);
+    copyParts(tmpC.y,out,1);
+    cout << "Duino response" << endl;
+    printA(tmpC.x);
+    printA(tmpC.y);
+    RS232_CloseComport(usbtty);
     return 0;
-//   cout << "P+P" << endl;
-    /*cleanPoly(x_P);
-    cleanPoly(y_P);
-    cleanPoly(x_Q);
-    cleanPoly(y_Q);*/
-    // P Q points
-/*    Point P;
-    Point Q;
-    copyPoly(P.x,x_P);
-    copyPoly(P.y,y_P);
-    copyPoly(Q.x,x_Q);
-    copyPoly(Q.y,y_Q);
-    //
-    Point R;
-    cleanPoly(R.x);
-    cleanPoly(R.y);
-    addPoints(&P, &Q, &R);
-    cout << "R.x ";
-    printA(R.x);
-    cout << "R.y ";
-    printA(R.y);
-    cout << (unsigned int) weierstrass(R.x, R.y) << endl;
-    cout << "2*P" << endl;
-    Point SecP;
-    copyPoly(SecP.x, x_P);
-    copyPoly(SecP.y, y_P);
-    addPoints(&P, &SecP, &R);
-    cout << "R.x ";
-    printA(R.x);
-    cout << "R.y ";
-    printA(R.y);
-    cout << (unsigned int) weierstrass(R.x, R.y) << endl;*/
-/*
-    unsigned char d[SIZE];
-    cleanPoly(d); // dělitel
-    unsigned char m[SIZE];
-    cleanPoly(m); // modulo
-    unsigned char result[SIZE];
-    cleanPoly(result); // výsledek
-    //
-    //unsigned char a[SIZE] = { 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 };
-    //unsigned char a[SIZE] = { 0x30, 0xeb, 0x38, 0xe4, 0x60, 0xb4, 0x33, 0xdb, 0x82, 0x2a };
-    //unsigned char a[SIZE] = { 0x54, 0x7B, 0x2C, 0x88, 0x26, 0x6B, 0xB0, 0x4F, 0x71, 0x3B };
-    // ================
-
-    cout << "inverse" << endl;
-    inverse(p,a,result);
-    printA(result);
-    cout << "=======" << endl;
-    cout << "mul" << endl;
-    unsigned char multip[SIZE];
-    cleanPoly(multip);
-    mul(result,a,multip);
-    printA(multip);
-    cout << "=======" << endl;
-    cout << "result is 1?" << endl;
-    unsigned char mulq[SIZE];
-    cleanPoly(mulq);
-    unsigned char mulm[SIZE];
-    cleanPoly(mulm);
-    divMod(multip,p,mulm,mulq);
-    printA(p);
-    printA(mulm);
-    printA(mulq);
-    cout << "=======" << endl;
-return 1;
-
-*/
-    /*
-    unsigned char a[SIZE] = { \
-    0x4A, 0x2E, 0x38, 0xA8, \
-    0xF6, 0x6D, 0x7F, 0x4C, 0x38, 0x5F  \
-    };
-    unsigned char b[SIZE] = { \
-    0x1C, 0x0B, 0xB3, 0x1C, \
-    0x6B, 0xEC, 0xC0, 0x3D, 0x68, 0xA7 \
-    };
-    */
-    /*unsigned char a[SIZE] = { \
-    0x00, 0x01, 0x00, 0x00, \
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00  \
-    };
-    unsigned char d[SIZE];
-    unsigned char b[SIZE] = { \
-    0x02, 0x00, 0x00, 0x01, \
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00  \
-    };
-    unsigned char copyb[SIZE];
-    copyPoly(copyb,b);
-    unsigned char copyp[SIZE];
-    copyPoly(copyp,p);
-
-    inverse(p,b,d); // d je inverz
-    //mul(a,b,d);
-    cout << "===inver==" << endl;
-    printA(d); // mělo by být
-    //printA(d);
-    cout << "========" << endl;
-    unsigned char resn[SIZE];
-    cleanPoly(resn);
-    mul(copyb,d,resn);
-    cout << "===resn==" << endl;
-    printA(resn); // mělo by být
-    printA(copyb); // mělo by být
-    //printA(d);
-    cout << "========" << endl;
-    unsigned char resm[SIZE];
-    cleanPoly(resm);
-    unsigned char resq[SIZE];
-    cleanPoly(resq);
-    divMod(copyp, resn, resm, resq);
-    cout << "=========" << endl;
-    printA(resm);
-    printA(resq);
-    return 0;
-    */
 }

@@ -1,5 +1,5 @@
 #define SIZE (20)
-#define KA_SIZE (1)
+#define KA_SIZE (10)
 
 unsigned char POLA[SIZE] = { 0x5F, 0x38, 0x4C, 0x7F, 0x6D, 0xF6, 0xA8, 0x38, 0x2E, 0x4A };
 unsigned char POLB[SIZE] = { 0xA7, 0x68, 0x3D, 0xC0, 0xEC, 0x6B, 0x1C, 0xB3, 0x0B, 0x2C };
@@ -430,10 +430,41 @@ unsigned char subsone(unsigned char * numb, unsigned int sz){
     return false;
 }
 
+void doubleAndAdd(unsigned char * numb, Point * P, unsigned char sznum = KA_SIZE){
+    Point MP;
+    copyPoly(MP.x, P->x);
+    copyPoly(MP.y, P->y);
+    Point Q;
+    cleanPoly(Q.x);
+    cleanPoly(Q.y);
+    for(unsigned char i=0; i<sznum; i++){
+        for(unsigned char j = 1; j !=0 ; j <<= 1){
+            if((numb[i] & j) > 0){
+                Point tmpA;
+                cleanPoly(tmpA.x);
+                cleanPoly(tmpA.y);
+                addPoints(&MP, &Q, &tmpA);
+                copyPoly(Q.x,tmpA.x);
+                copyPoly(Q.y,tmpA.y);
+            }
+            Point tmpA;
+            copyPoly(tmpA.x, MP.x);
+            copyPoly(tmpA.y, MP.y);
+            Point tmpB;
+            copyPoly(tmpB.x, MP.x);
+            copyPoly(tmpB.y, MP.y);
+            addPoints(&tmpB, &tmpA, &MP);
+        }
+    }
+    copyPoly(P->x,Q.x);
+    copyPoly(P->y,Q.y);
+}
 //====================
 unsigned char Ka[KA_SIZE];
 Point tmpA;
 Point P;
+
+Point Key;
 
 void setup() {
   Serial.begin(9600);
@@ -442,6 +473,8 @@ void setup() {
   }
   copyPoly(P.x, P_x);
   copyPoly(P.y, P_y);
+  cleanPoly(Key.x);
+  cleanPoly(Key.y);
   for(unsigned char i = 0; i < KA_SIZE; i ++){
       Ka[i] = (unsigned char)random(0x00, 0xFF);  
   }
@@ -457,20 +490,37 @@ void loop() {
   if (Serial.available() > 0) {
       byte keyk = Serial.read();
       if(keyk == 0x10){
-        unsigned char Katmp[KA_SIZE];
-        memcpy(Katmp,Ka,KA_SIZE);
-        while(!subsone(Katmp,2)){
-            Point R;
-            cleanPoly(R.x);
-            cleanPoly(R.y);
-            addPoints(&P,&tmpA,&R);
-            copyPoly(tmpA.x,R.x);
-            copyPoly(tmpA.y,R.y);
-        }
+        Point tmpA;
+        copyPoly(tmpA.x, P.x);
+        copyPoly(tmpA.y, P.y);
+        doubleAndAdd(Ka, &tmpA);
         for(byte i = 0; i < 10; i++)
           Serial.write(tmpA.x[i]);
         for(byte i = 0; i < 10; i++)
           Serial.write(tmpA.y[i]);
+      }else if(keyk == 0x11){
+        Point tmpB;
+        byte cn = 0;
+        while (cn < 10){
+          if (!Serial.available())
+            continue;
+          tmpB.x[cn] = Serial.read();   
+        }
+        cn = 0;
+        while (cn < 10){
+          if (!Serial.available())
+            continue;
+          tmpB.y[cn] = Serial.read();
+        }
+        doubleAndAdd(Ka, &tmpB);
+        copyPoly(Key.x,tmpB.x);
+        copyPoly(Key.y,tmpB.y);
+        for(byte i = 0; i < 10; i++)
+          Serial.write(Key.x[i]);
+        for(byte i = 0; i < 10; i++)
+          Serial.write(Key.y[i]);
+      }else if(keyk == 0x33){
+        Serial.write(0x33);
       }
    }
 }
