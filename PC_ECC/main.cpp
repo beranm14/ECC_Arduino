@@ -464,7 +464,7 @@ unsigned char subsone(unsigned char * numb, unsigned int sz){
             return true;
         }
         numb[i] --;
-        if (numb[i] == 0xFF){
+        if (numb[i] == 0x00){
             i ++;
         }else
             break;
@@ -472,6 +472,34 @@ unsigned char subsone(unsigned char * numb, unsigned int sz){
     return false;
 }
 
+void doubleAndAdd(unsigned char * numb, Point * P, unsigned char sznum){
+    Point Q;
+    cleanPoly(Q.x);
+    cleanPoly(Q.y);
+    for(unsigned char i=0; i<sznum; i++){
+        for(unsigned char j = 1; j !=0 ; j <<= 1){
+            if((numb[i] & j) > 0){
+                Point tmpA;
+                cleanPoly(tmpA.x);
+                cleanPoly(tmpA.y);
+                addPoints(P, &Q, &tmpA);
+                copyPoly(Q.x,tmpA.x);
+                copyPoly(Q.y,tmpA.y);
+                //cout << hex << (int) j << endl;
+            }else{
+                Point tmpA;
+                copyPoly(tmpA.x, P->x);
+                copyPoly(tmpA.y, P->y);
+                Point tmpB;
+                copyPoly(tmpB.x, P->x);
+                copyPoly(tmpB.y, P->y);
+                addPoints(&tmpB, &tmpA, P);
+            }
+        }
+    }
+    copyPoly(P->x,Q.x);
+    copyPoly(P->y,Q.y);
+}
 
 int main()
 {
@@ -491,14 +519,20 @@ printA(toredb);
     Point Pb;
     copyPoly(Pb.x,x_P);
     copyPoly(Pb.y,y_P);
-    unsigned char Kb[2] = { 0x01, 0x0f }; //, 0xf1 };
+    unsigned char Kb[2] = { 0xff , 0x0f }; //, 0xf1 };
 // count A
+    //cout << "==================" << endl;
+    Point tmpA;
+    copyPoly(tmpA.x,Pa.x);
+    copyPoly(tmpA.y,Pa.y);
+    doubleAndAdd(Ka,&tmpA,1);
+    /*
     Point tmpA;
     copyPoly(tmpA.x,x_P);
     copyPoly(tmpA.y,y_P);
-    unsigned char Katmp[2];
-    memcpy(Katmp,Ka,2);
-    while(!subsone(Katmp,2)){
+    unsigned char Katmp[1];
+    memcpy(Katmp,Ka,1);
+    while(!subsone(Katmp,1)){
         Point R;
         cleanPoly(R.x);
         cleanPoly(R.y);
@@ -506,7 +540,16 @@ printA(toredb);
         copyPoly(tmpA.x,R.x);
         copyPoly(tmpA.y,R.y);
     }
+    printA(tmpA.x);
+    printA(tmpA.y);*/
+    //cout << "==================" << endl;
+    //return 0;
 // count B
+    Point tmpB;
+    copyPoly(tmpB.x,Pa.x);
+    copyPoly(tmpB.y,Pa.y);
+    doubleAndAdd(Kb,&tmpB,1);
+/*
     Point tmpB;
     copyPoly(tmpB.x,x_P);
     copyPoly(tmpB.y,y_P);
@@ -519,8 +562,10 @@ printA(toredb);
         addPoints(&Pb,&tmpB,&R);
         copyPoly(tmpB.x,R.x);
         copyPoly(tmpB.y,R.y);
-    }
+    }*/
 // count KA
+    doubleAndAdd(Ka,&tmpB,1);
+/*
     memcpy(Katmp,Ka,2);
     while(!subsone(Katmp,2)){
         Point R;
@@ -529,8 +574,10 @@ printA(toredb);
         addPoints(&Pb,&tmpB,&R);
         copyPoly(tmpB.x,R.x);
         copyPoly(tmpB.y,R.y);
-    }
+    }*/
 // count KB
+    doubleAndAdd(Kb,&tmpA,1);
+/*
     memcpy(Kbtmp,Kb,2);
     while(!subsone(Kbtmp,2)){
         Point R;
@@ -540,7 +587,9 @@ printA(toredb);
         copyPoly(tmpA.x,R.x);
         copyPoly(tmpA.y,R.y);
     }
+*/
 // cout
+cout << "=====================" << endl;
 cout << "KBx ";
 printA(tmpA.x);
 cout << "KBy ";
