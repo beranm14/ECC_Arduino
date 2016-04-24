@@ -1,6 +1,6 @@
 CXX=g++
 LD=g++
-CFLAGS=-Wall -pedantic -Wno-long-long -O0 -ggdb
+CFLAGS=-Wall -pedantic -g
 LIBS=
 
 rs232.o: rs232.h rs232.c
