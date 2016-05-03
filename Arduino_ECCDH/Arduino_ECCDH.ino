@@ -12,7 +12,8 @@ void setup() {
   while (!Serial) {
     ; 
   }
-  randomSeed(millis());
+  pinMode (2, INPUT);
+  randomSeed(millis() ^ analogRead (2));
   initialECDH(&P, Ka);
   loadKey(Key.x,30);
   loadKey(Key.y,10);
@@ -23,7 +24,12 @@ void loop() {
   unsigned char  wrd[SIZE];
   if (Serial.available() > 0) {
       byte keyk = Serial.read();
-      if(keyk == 0x10){ // Count first secret
+       if(keyk == 0x67){ // Tell Ka
+       /* for(byte i = 0; i < 10; i++)
+          Ka[i] = random(254);*/
+        for(byte i = 0; i < 10; i++)
+          Serial.write(Ka[i]);        
+       }else if(keyk == 0x10){ // Count first secret
         Point tmpA;
         copyPoly(tmpA.x, P.x);
         copyPoly(tmpA.y, P.y);
@@ -94,6 +100,11 @@ void loop() {
         saveKey(Key.x,30);
         saveKey(Key.y,10);
         Serial.write(0x60);
+      }else if(keyk == 0x61){ // say keys
+        for(unsigned char j = 0; j < 10; j ++)
+          Serial.write(Key.x[j]);
+        for(unsigned char j = 0; j < 10; j ++)
+          Serial.write(Key.y[j]);
       }else if(keyk == 0x33){ // juck ack
         Serial.write(0x33);
       }

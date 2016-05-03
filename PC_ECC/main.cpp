@@ -507,7 +507,7 @@ inline unsigned char * getPoly(unsigned int a, unsigned char * poly){
 
 void printA(unsigned char * a){
     for(unsigned char i = 0; i < SIZE; i++){
-        cout << std::hex << (unsigned int)a[i];
+        cout << hex << (unsigned int)a[i];
         cout << " ";
     }
     cout << endl;
@@ -904,7 +904,7 @@ int main(int argc, char *argv[])
     cout << "Port opened" << endl;
 // syncing with duino
     int n = 0;
-    unsigned char out[21];
+    unsigned char out[34];
     cleanPoly(out);
     RS232_SendByte(usbtty, 0x33);
     while(1){
@@ -919,6 +919,27 @@ int main(int argc, char *argv[])
         sleep(1);
         RS232_SendByte(usbtty, 0x33);
     }
+// asking for Ka
+    cout << "Asking for Ka" << endl;
+    RS232_SendByte(usbtty, 0x67);
+    while(1){
+        n = RS232_PollComport(usbtty, out, 20);
+        out[n] = '\0';
+        if(n!=0){
+            if (out[0] == 0x33){
+                cout << "Just sync" << endl;
+            }else{
+                cout << dec << (unsigned int) n;
+                cout << " got response" << endl;
+                break;
+            }
+        }
+        sleep(1);
+    }
+    for(unsigned char i = 0; i < 10 ; i++){
+        cout << hex << (int) out[i] << " ";
+    }
+    cout << endl;
 // call from DH start
     cout << "Counting our Pa and sendig Duino command to start as well" << endl;
     RS232_SendByte(usbtty, 0x10);
@@ -926,6 +947,7 @@ int main(int argc, char *argv[])
     copyPoly(Pa.x,x_P);
     copyPoly(Pa.y,y_P);
     unsigned char Ka[10] = { 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12}; //, 0xf1 };
+    // 123456789012345678
     Point tmpA;
     copyPoly(tmpA.x, Pa.x);
     copyPoly(tmpA.y, Pa.y);
@@ -986,7 +1008,7 @@ int main(int argc, char *argv[])
     printA(tmpB.x);
     printA(tmpB.y);
 
-    cout << "Waiting fo Duino to finnish" << endl;
+    cout << "Waiting for Duino to finnish" << endl;
     while(1){
         n = RS232_PollComport(usbtty, out, 20);
         out[n] = '\0';
@@ -998,6 +1020,31 @@ int main(int argc, char *argv[])
         sleep(1);
     }
     cout << hex << (unsigned int)out[0] << dec << endl;
+    cout << "Asking Duino for Key!!!" << endl;
+
+    RS232_SendByte(usbtty, 0x61);
+    while(1){
+        n = RS232_PollComport(usbtty, out, 34);
+        out[n] = '\0';
+        if(n!=0){
+            if (out[0] == 0x33){
+                cout << "Just sync" << endl;
+            }else{
+                cout << dec << (unsigned int) n;
+                cout << " got response" << endl;
+                break;
+            }
+        }
+        sleep(1);
+    }
+    cout << "Key: " << endl;
+    for(unsigned char i=0; i<10; i++)
+        cout << " " << hex << (unsigned int) out[i] << dec;
+    cout << endl;
+    for(unsigned char i=10; i<20; i++)
+        cout << " " << hex << (unsigned int) out[i] << dec;
+    cout << endl;
+
 // =============================== AES TESTS ===============================
 // =========================================================================
     cout << "Asking Duino to AES decrypt for me to test it" << endl;
@@ -1073,7 +1120,20 @@ int main(int argc, char *argv[])
         cout << " " << hex << (unsigned int) out[i] << dec;
     cout << endl;
 
-    sleep(1);
+    RS232_SendByte(usbtty, 0x33);
+    while(1){
+        sleep(1);
+        n = RS232_PollComport(usbtty, out, 20);
+        out[n] = '\0';
+        if(n!=0){
+            cout << hex << (unsigned int) out[0];
+            cout << " synced" << endl;
+            break;
+        }
+        sleep(1);
+        RS232_SendByte(usbtty, 0x33);
+    }
+    RS232_flushRXTX(usbtty);
     RS232_CloseComport(usbtty);
     return 0;
 }
