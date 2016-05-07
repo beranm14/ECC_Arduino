@@ -25,8 +25,6 @@ void loop() {
   if (Serial.available() > 0) {
       byte keyk = Serial.read();
        if(keyk == 0x67){ // Tell Ka
-       /* for(byte i = 0; i < 10; i++)
-          Ka[i] = random(254);*/
         for(byte i = 0; i < 10; i++)
           Serial.write(Ka[i]);        
        }else if(keyk == 0x10){ // Count first secret
