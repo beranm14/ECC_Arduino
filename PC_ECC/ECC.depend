@@ -2,9 +2,11 @@
 1460450473 source:/home/nemo/MI-BHW/ECC/ECC/main.cpp
 	<iostream>
 
-1461315234 source:/home/nemo/MI-BHW/ECC/to_keep/PC_ECC/main.cpp
+1462640572 source:/home/nemo/MI-BHW/ECC/to_keep/PC_ECC/main.cpp
 	<iostream>
 	<string.h>
+	<unistd.h>
+	<stdlib.h>
 	"rs232.h"
 
 1450525942 /home/nemo/MI-BHW/ECC/to_keep/PC_ECC/rs232.h

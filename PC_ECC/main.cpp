@@ -478,7 +478,7 @@ inline void cleanPoly(unsigned char * a){
 }
 
 
-inline unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char * res){
+/*inline unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char * res){
     unsigned char tmp[SIZE];
     copyPoly(tmp,a);
     for(unsigned char i = 0; i < SIZE; i++){
@@ -492,7 +492,31 @@ inline unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char *
         }
     }
     return res;
+}*/
+inline void addfromto(unsigned char * a, unsigned char * b, unsigned char from, unsigned char to){
+    for(unsigned char i = from; i < to; i ++){
+        a[i] = a[i] ^ b[i - from];
+    }
 }
+
+inline unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char * res){
+    //unsigned char res[SIZE];
+    cleanPoly(res);
+    unsigned char tmpa[SIZE];
+    copyPoly(tmpa, a);
+    unsigned char j = 0x01;
+    for(unsigned char k = 0; k < 8; k++){
+        for(unsigned char i = 0; i < SIZE; i++){
+            if (b[i] & j){
+                addfromto(res, tmpa, i, SIZE);
+            }
+        }
+        j <<= 1;
+        shiftLeft(tmpa);
+    }
+    return res;
+}
+
 
 inline unsigned char * getPoly(unsigned int a, unsigned char * poly){
     unsigned int where = a / 8;
@@ -601,6 +625,12 @@ inline unsigned char isEqualPoly(unsigned char * a, unsigned char * b){
     return true;*/
 }
 
+inline void swappo(unsigned char * a, unsigned char * b){
+    unsigned char * tmp;
+    tmp = a;
+    a = b;
+    b = tmp;
+}
 
 inline void inverse(unsigned char * a, unsigned char * b, unsigned char * res){
     unsigned char tmp_a[SIZE];
@@ -608,28 +638,32 @@ inline void inverse(unsigned char * a, unsigned char * b, unsigned char * res){
     unsigned char tmp_b[SIZE];
     copyPoly(tmp_b, b);
 
-	unsigned char b0[SIZE], t[SIZE], q[SIZE];
-    copyPoly(b0,b);
+	unsigned char  t[SIZE], q[SIZE];
+    //copyPoly(b0,b);
     cleanPoly(q);
-    unsigned char x0[SIZE], x1[SIZE];
+    unsigned char x0[SIZE];
+    unsigned char x1[SIZE];
+    //unsigned char * x1 = NULL;
     cleanPoly(x0);
     x0[0] = 0x01;
     cleanPoly(x1);
+    unsigned char restmp[SIZE];
+    unsigned char tmp[SIZE];
 
 	if (isOne(b)) return;
 	while (isBiggerThanOne(a)) {
-        unsigned char tmp[SIZE];
         cleanPoly(tmp);
         cleanPoly(q);
         divMod(a, b, tmp, q);// q = a / b;
         copyPoly(t, b);// t = b;
         copyPoly(b, tmp);// b = tmp;
         copyPoly(a, t); // a = t;
-		copyPoly(t, x0); //t = x0;
-        unsigned char restmp[SIZE];
+        copyPoly(t, x0); //t = x0;
         cleanPoly(restmp);
         copyPoly(x0, add(x1, mul(q, x0, restmp))); // x0 = x1 + q * x0;
+		//x0 = add(x1, mul(q, x0, restmp));
 		copyPoly(x1, t); //x1 = t;
+		//x1 = t;
     }
 	copyPoly(res, x1);
 	copyPoly(a,tmp_a);
@@ -742,17 +776,20 @@ void addPoints(Point * P, Point * Q, Point * R){
         copyPoly(R->y, I_y);
         return;
     }
-    unsigned char lambda[SIZE];
+    //unsigned char lambda[SIZE];
+    unsigned char * lambda;
+    unsigned char result[SIZE];
+    unsigned char addqx[SIZE];
+    unsigned char mul_tmp[SIZE];
     if (isEqualPoly(P->x, Q->x) && isEqualPoly(P->y, Q->y)){ // P == Q
         unsigned char inv_qx[SIZE];
         cleanPoly(inv_qx);
         inverse(p, Q->x, inv_qx); // 1/xQ
-        unsigned char mul_tmp[SIZE];
         cleanPoly(mul_tmp);
         mulRed(Q->y, inv_qx, mul_tmp); // yQ*(1/xQ)
-        unsigned char addqx[SIZE];
         copyPoly(addqx,Q->x);
-        copyPoly(lambda, add(addqx, mul_tmp));
+        //copyPoly(lambda, add(addqx, mul_tmp));
+        lambda = add(addqx, mul_tmp);
     }else{                                                   // P != Q
         unsigned char tmp_top[SIZE];
         cleanPoly(tmp_top);
@@ -765,10 +802,9 @@ void addPoints(Point * P, Point * Q, Point * R){
         unsigned char inv[SIZE];
         cleanPoly(inv);
         inverse(p, tmp_down, inv); // 1/(xP + xQ)
-        unsigned char result[SIZE];
         cleanPoly(result);
         mulRed(tmp_top, inv, result); // 1/(xP + xQ) * (yP + yQ)
-        copyPoly(lambda, result); // lambda = 1/(xP + xQ) * yP + yQ
+        lambda = result; // lambda = 1/(xP + xQ) * yP + yQ
     }
     unsigned char cpa[SIZE];
     copyPoly(cpa, POLA);
@@ -858,23 +894,26 @@ void doubleAndAdd(unsigned char * numb, Point * P, unsigned char sznum){
     Point Q;
     cleanPoly(Q.x);
     cleanPoly(Q.y);
+    Point tmpA;
     for(unsigned char i=0; i<sznum; i++){
         for(unsigned char j = 1; j !=0 ; j <<= 1){
             if((numb[i] & j) > 0){
-                Point tmpA;
                 cleanPoly(tmpA.x);
                 cleanPoly(tmpA.y);
                 addPoints(&MP, &Q, &tmpA);
-                copyPoly(Q.x,tmpA.x);
-                copyPoly(Q.y,tmpA.y);
+                //copyPoly(Q.x,tmpA.x);
+                //copyPoly(Q.y,tmpA.y);
+                Q = tmpA;
+                /*Q.x = tmpA.x;
+                Q.y = tmpA.y;*/
             }
-            Point tmpA;
             copyPoly(tmpA.x, MP.x);
             copyPoly(tmpA.y, MP.y);
-            Point tmpB;
+            /*Point tmpB;
             copyPoly(tmpB.x, MP.x);
             copyPoly(tmpB.y, MP.y);
-            addPoints(&tmpB, &tmpA, &MP);
+            addPoints(&tmpB, &tmpA, &MP);*/
+            addPoints(&MP, &tmpA, &MP);
         }
     }
     copyPoly(P->x,Q.x);
@@ -889,6 +928,34 @@ void copyParts(unsigned char * a, unsigned char * b, unsigned char sz){
 
 int main(int argc, char *argv[])
 {
+
+    /*unsigned char Ka[10] = { 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12}; //, 0xf1 };
+    unsigned char Kb[10] = { 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12}; //, 0xf1 };
+    unsigned char res1[10];
+    cleanPoly(res1);
+    mul(Ka,Kb,res1);
+    printA(res1);
+    unsigned char res2[10];
+    cleanPoly(res2);
+    mule(Ka,Kb,res2);
+    printA(res2);*/
+
+
+/*
+    Point Pa;
+    copyPoly(Pa.x,x_P);
+    copyPoly(Pa.y,y_P);
+    unsigned char Ka[30] = { 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12}; //, 0xf1 };
+    // 123456789012345678
+    Point tmpA;
+    copyPoly(tmpA.x, Pa.x);
+    copyPoly(tmpA.y, Pa.y);
+    doubleAndAdd(Ka, &tmpA, 30);
+    printA(tmpA.x);
+    printA(tmpA.y);
+*/
+
+
     if(argc < 2){
         cout << "None port given" << endl;
         return 1;
@@ -1135,5 +1202,6 @@ int main(int argc, char *argv[])
     }
     RS232_flushRXTX(usbtty);
     RS232_CloseComport(usbtty);
+
     return 0;
 }

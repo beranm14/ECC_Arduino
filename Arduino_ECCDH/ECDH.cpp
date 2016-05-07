@@ -91,6 +91,7 @@ unsigned int getHighBit(unsigned char * a){
     return l;
 }
 
+/*
 unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char * res){
     unsigned char tmp[SIZE];
     copyPoly(tmp,a);
@@ -103,6 +104,30 @@ unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char * res){
             shiftLeft(tmp);
             j <<= 1;
         }
+    }
+    return res;
+}
+*/
+inline void addfromto(unsigned char * a, unsigned char * b, unsigned char from, unsigned char to){
+    for(unsigned char i = from; i < to; i ++){
+        a[i] = a[i] ^ b[i - from];
+    }
+}
+
+inline unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char * res){
+    //unsigned char res[SIZE];
+    cleanPoly(res);
+    unsigned char tmpa[SIZE];
+    copyPoly(tmpa, a);
+    unsigned char j = 0x01;
+    for(unsigned char k = 0; k < 8; k++){
+        for(unsigned char i = 0; i < SIZE; i++){
+            if (b[i] & j){
+                addfromto(res, tmpa, i, SIZE);
+            }
+        }
+        j <<= 1;
+        shiftLeft(tmpa);
     }
     return res;
 }
@@ -324,7 +349,7 @@ unsigned char * square(unsigned char * a){
     return (memcmp(tmp.x, p->x, SIZE) == 0 && memcmp(tmp.y, p->y, SIZE) == 0);
 }
 
-void addPoints(Point * P, Point * Q, Point * R){
+/*void addPoints(Point * P, Point * Q, Point * R){
     if(isInfinity(P)){
         copyPoly(R->x, Q->x);
         copyPoly(R->y, Q->y);
@@ -386,6 +411,72 @@ void addPoints(Point * P, Point * Q, Point * R){
     add(rsl,R->x); // xR
     add(rsl,Q->y); // yQ
     copyPoly(R->y,rsl);
+}*/
+
+void addPoints(Point * P, Point * Q, Point * R){
+    if(isInfinity(P)){
+        copyPoly(R->x, Q->x);
+        copyPoly(R->y, Q->y);
+        return;
+    }else if(isInfinity(Q)){
+        copyPoly(R->x, P->x);
+        copyPoly(R->y, P->y);
+        return;
+    }else if(isNeg(P,Q) || isNeg(Q,P)){
+        copyPoly(R->x, I_x);
+        copyPoly(R->y, I_y);
+        return;
+    }
+    //unsigned char lambda[SIZE];
+    unsigned char * lambda;
+    unsigned char result[SIZE];
+    unsigned char addqx[SIZE];
+    unsigned char mul_tmp[SIZE];
+    if (isEqualPoly(P->x, Q->x) && isEqualPoly(P->y, Q->y)){ // P == Q
+        unsigned char inv_qx[SIZE];
+        cleanPoly(inv_qx);
+        inverse(p, Q->x, inv_qx); // 1/xQ
+        cleanPoly(mul_tmp);
+        mulRed(Q->y, inv_qx, mul_tmp); // yQ*(1/xQ)
+        copyPoly(addqx,Q->x);
+        //copyPoly(lambda, add(addqx, mul_tmp));
+        lambda = add(addqx, mul_tmp);
+    }else{                                                   // P != Q
+        unsigned char tmp_top[SIZE];
+        cleanPoly(tmp_top);
+        add(tmp_top, P->y);
+        add(tmp_top, Q->y); // yP + yQ
+        unsigned char tmp_down[SIZE];
+        cleanPoly(tmp_down);
+        add(tmp_down, P->x);
+        add(tmp_down, Q->x); // xP + xQ
+        unsigned char inv[SIZE];
+        cleanPoly(inv);
+        inverse(p, tmp_down, inv); // 1/(xP + xQ)
+        cleanPoly(result);
+        mulRed(tmp_top, inv, result); // 1/(xP + xQ) * (yP + yQ)
+        lambda = result; // lambda = 1/(xP + xQ) * yP + yQ
+    }
+    unsigned char cpa[SIZE];
+    copyPoly(cpa, POLA);
+    unsigned char sqlam[SIZE];
+    copyPoly(sqlam, lambda);
+    //xR = a + λ^2 + λ + xP + xQ
+    add(cpa, lambda); // a* = a + λ
+    add(cpa, square(sqlam)); // a** = a* + λ^2
+    add(cpa, P->x); // a*** = a** + P->x
+    add(cpa, Q->x); // a*** = a** + Q->x
+    copyPoly(R->x,cpa);
+    // yR = (xQ + xR) · λ + xR + yQ
+    unsigned char cpq[SIZE];
+    unsigned char rsl[SIZE];
+    cleanPoly(rsl);
+    copyPoly(cpq, Q->x); // xQ
+    add(cpq, R->x); // xQ + xR
+    mulRed(cpq, lambda, rsl); // (xQ + xR) · λ
+    add(rsl,R->x); // xR
+    add(rsl,Q->y); // yQ
+    copyPoly(R->y,rsl);
 }
 
 /*char weierstrass(unsigned char * x, unsigned char * y){
@@ -423,23 +514,26 @@ void doubleAndAdd(unsigned char * numb, Point * P, unsigned char sznum){
     Point Q;
     cleanPoly(Q.x);
     cleanPoly(Q.y);
+    Point tmpA;
     for(unsigned char i=0; i<sznum; i++){
         for(unsigned char j = 1; j !=0 ; j <<= 1){
             if((numb[i] & j) > 0){
-                Point tmpA;
                 cleanPoly(tmpA.x);
                 cleanPoly(tmpA.y);
                 addPoints(&MP, &Q, &tmpA);
-                copyPoly(Q.x,tmpA.x);
-                copyPoly(Q.y,tmpA.y);
+                //copyPoly(Q.x,tmpA.x);
+                //copyPoly(Q.y,tmpA.y);
+                Q = tmpA;
+                /*Q.x = tmpA.x;
+                Q.y = tmpA.y;*/
             }
-            Point tmpA;
             copyPoly(tmpA.x, MP.x);
             copyPoly(tmpA.y, MP.y);
-            Point tmpB;
+            /*Point tmpB;
             copyPoly(tmpB.x, MP.x);
             copyPoly(tmpB.y, MP.y);
-            addPoints(&tmpB, &tmpA, &MP);
+            addPoints(&tmpB, &tmpA, &MP);*/
+            addPoints(&MP, &tmpA, &MP);
         }
     }
     copyPoly(P->x,Q.x);

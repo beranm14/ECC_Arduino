@@ -25,6 +25,8 @@ unsigned char isZero(unsigned char * a);
 
 unsigned int getHighBit(unsigned char * a);
 
+inline void addfromto(unsigned char * a, unsigned char * b, unsigned char from, unsigned char to);
+
 unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char * res);
 
 unsigned char * getPoly(unsigned int a, unsigned char * poly);
