@@ -1,6 +1,7 @@
 #ifndef ecdh
 #define ecdh
 #define SIZE (20)
+#define HALFSIZE (20)
 #define KA_SIZE (10)
 
 class Point{

@@ -38,23 +38,33 @@ void initialECDH(Point * P, unsigned char * Ka){
   }
 }
 
- unsigned char * add(unsigned char * a, unsigned char * b, unsigned char from){
-    for(unsigned char i = from; i < SIZE; i++){
+unsigned char * add(unsigned char * a, unsigned char * b, unsigned char from){ // corrected
+    for(unsigned char i = from; i < HALFSIZE; i++){
         a[i] = a[i] ^ b[i];
     }
     return a;
 }
 
- bool isNotZero(unsigned char * a){
-    for(unsigned char i = 0; i < SIZE; i++){
+inline bool isNotZero(unsigned char * a){ // corrected
+    for(unsigned char i = 0; i < HALFSIZE; i++){
         if (a[i] != 0)
             return true;
     }
     return false;
 }
 
- void shiftLeft(unsigned char * a, unsigned char k){
-    unsigned char tmp = 0;
+void shiftLeft(unsigned char * a, unsigned char k){ // corrected
+    unsigned int tmp = 0;
+    unsigned int tmr = 0;
+    for (unsigned char j = 0 ; j < k; j++){
+        tmp = a[j] << 1;
+        //tmp <<= 1;
+        a[j] = tmp;
+        if ((tmr & 0x100))
+            a[j] |= 0x01;
+        tmr = tmp;
+    }
+/*    unsigned char tmp = 0;
     for (unsigned char j = 0 ; j < k; j++){
         unsigned char tmr = a[j] & 0x80;
         a[j] <<= 1;
@@ -62,10 +72,11 @@ void initialECDH(Point * P, unsigned char * Ka){
             a[j] |= 1;
         tmp = tmr;
     }
+*/
 }
 
- unsigned char isZero(unsigned char * a){
-    for(unsigned char i = 0; i < SIZE; i++){
+inline unsigned char isZero(unsigned char * a){ //corrected
+    for(unsigned char i = 0; i < HALFSIZE; i++){
         if(a[i] != 0){
             return false;
         }
@@ -73,12 +84,13 @@ void initialECDH(Point * P, unsigned char * Ka){
     return true;
 }
 
-unsigned int getHighBit(unsigned char * a){
-   if(isZero(a))
-        return 0;
-    unsigned int bits_size = SIZE * 8;
+inline unsigned int getHighBit(unsigned char * a){ // corrected
+   /*if(isZero(a))
+        return 0;*/
+    unsigned int bits_size = HALFSIZE * 8;
     unsigned int l = 0;
-    for (int i = SIZE - 1; i != -1; i --){
+    for (int i = HALFSIZE - 1; i != -1; i --){
+        /*
         unsigned char tmp = 0x80;
         while ((a[i] & tmp) == 0 && tmp != 0){
             tmp >>= 1;
@@ -86,6 +98,39 @@ unsigned int getHighBit(unsigned char * a){
         }
         if(tmp != 0)
             break;
+        */
+        if((a[i] & 0x80)){ // vypadá to hnusně, ale v testech to ušetřilo půl sekundy
+            break;
+        }
+        l ++;
+        if((a[i] & 0x40)){
+            break;
+        }
+        l ++;
+        if((a[i] & 0x20)){
+            break;
+        }
+        l ++;
+        if((a[i] & 0x10)){
+            break;
+        }
+        l ++;
+        if((a[i] & 0x08)){
+            break;
+        }
+        l ++;
+        if((a[i] & 0x04)){
+            break;
+        }
+        l ++;
+        if((a[i] & 0x02)){
+            break;
+        }
+        l ++;
+        if((a[i] & 0x01)){
+            break;
+        }
+        l ++;
     }
     l = bits_size - l;
     return l;
@@ -114,7 +159,7 @@ inline void addfromto(unsigned char * a, unsigned char * b, unsigned char from, 
     }
 }
 
-inline unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char * res){
+inline unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char * res){ //corrected
     //unsigned char res[SIZE];
     cleanPoly(res);
     unsigned char tmpa[SIZE];
@@ -132,25 +177,44 @@ inline unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char *
     return res;
 }
 
-unsigned char * getPoly(unsigned int a, unsigned char * poly){
+inline unsigned char * getPoly(unsigned int a, unsigned char * poly){ // corrected
     unsigned int where = a / 8;
     unsigned int which = a % 8;
-    poly[where] = 1;
+    /*poly[where] = 1;
     while (which){
         poly[where] <<= 1;
         which --;
+    }*/
+    if(which == 0){  // tohle neurychlilo vůbec nic
+        poly[where] = 1;
+    }else if(which == 1){
+        poly[where] = 2;
+    }else if(which == 2){
+        poly[where] = 4;
+    }else if(which == 3){
+        poly[where] = 8;
+    }else if(which == 4){
+        poly[where] = 0x10;
+    }else if(which == 5){
+        poly[where] = 0x20;
+    }else if(which == 6){
+        poly[where] = 0x40;
+    }else if(which == 7){
+        poly[where] = 0x80;
     }
     return poly;
 }
 
-void divMod(unsigned char * a, unsigned char * b, unsigned char * m, unsigned char * d){
-    unsigned char tmp_a[SIZE];
-    copyPoly(tmp_a,a);
-    if (isZero(a)|| isZero(b) || getHighBit(a) < getHighBit(b)){
+inline void divMod(unsigned char * a, unsigned char * b, unsigned char * m, unsigned char * d){ // corrected
+    unsigned int  alen = getHighBit(a);
+    unsigned int  blen = getHighBit(b);
+    if (alen == 0 || blen == 0 || alen < blen){
         copyPoly(m, a);
         cleanPoly(d);
         return;
     }
+    unsigned char tmp_a[SIZE];
+    copyPoly(tmp_a, a);
     unsigned int dr;
     while( 1 ){
         unsigned char tmpl[SIZE];
@@ -158,24 +222,25 @@ void divMod(unsigned char * a, unsigned char * b, unsigned char * m, unsigned ch
         unsigned char tmpp[SIZE];
         cleanPoly(tmpp);
         unsigned char tmpres[SIZE];
-        cleanPoly(tmpres);
+        //cleanPoly(tmpres);
         //
-        dr = (getHighBit(a) - getHighBit(b));
+        dr = (getHighBit(tmp_a) - getHighBit(b));
         //cout << (unsigned int) dr << endl;
         //return;
         add(d,getPoly(dr,tmpp));
-        copyPoly(m, add(a, mul(getPoly(dr,tmpp),b,tmpres))); //*m = a ^ mulPoly(getPoly(dr),b);
-        if(getHighBit(m) < getHighBit(b))
+        copyPoly(m, add(tmp_a, mul(getPoly(dr,tmpp),b,tmpres))); //*m = a ^ mulPoly(getPoly(dr),b);
+        //m = add(a, mul(getPoly(dr,tmpp),b,tmpres));
+        if(getHighBit(m) < blen)
             break;
         else{
-            copyPoly(a, m);
+            copyPoly(tmp_a, m);
         }
     }
-    copyPoly(a,tmp_a);
+    //copyPoly(a,tmp_a);
 }
 
- unsigned char isOne(unsigned char * b){
-    for(unsigned char i = 1; i < SIZE; i++){
+unsigned char isOne(unsigned char * b){ //corrected
+    for(unsigned char i = 1; i < HALFSIZE; i++){
         if(b[i] != 0)
             return 0;
     }
@@ -183,6 +248,7 @@ void divMod(unsigned char * a, unsigned char * b, unsigned char * m, unsigned ch
         return 1;
     return 0;
 }
+
 
 unsigned char * reduce(unsigned char * c){
     unsigned char up, down, tmp, i;
@@ -204,8 +270,8 @@ unsigned char * reduce(unsigned char * c){
     return c;
 }
 
- unsigned char isBiggerThanOne(unsigned char * b){
-    for(unsigned char i = 1; i < SIZE; i++){
+unsigned char isBiggerThanOne(unsigned char * b){ // corrected
+    for(unsigned char i = 1; i < HALFSIZE; i++){ // stačí půlka, polynomy jsou po redukci
         if(b[i] != 0)
             return 1;
     }
@@ -305,20 +371,31 @@ unsigned char * inversBitsInPoly(unsigned char * a){
     return a;
 }
 
-unsigned char * square(unsigned char * a){
+inline unsigned char * square(unsigned char * a){ // corrected
     unsigned char looksup[9] = {0x00, 0x01, 0x04, 0x00, 0x10, 0x00, 0x00, 0x00, 0x40};
     unsigned char result[SIZE];
     unsigned char k = 0;
     cleanPoly(result);
-    for(unsigned char i = 0; i < SIZE; i++){
-            unsigned char tmp = 1;
+    for(unsigned char i = 0; i < HALFSIZE; i++){
+            /*unsigned char tmp = 1;
             unsigned char nibble = 0;
             for(unsigned char j = 0; j < 4; j++){
                 nibble = (a[i] & tmp);
                 result[k] ^= looksup[nibble];
                 tmp <<= 1;
-            }
+            }*/
+            result[k] ^= looksup[a[i] & 0x01];
+            result[k] ^= looksup[a[i] & 0x02];
+            result[k] ^= looksup[a[i] & 0x04];
+            result[k] ^= looksup[a[i] & 0x08];
             a[i] = a[i] >> 4;
+            k ++;
+            result[k] ^= looksup[a[i] & 0x01];
+            result[k] ^= looksup[a[i] & 0x02];
+            result[k] ^= looksup[a[i] & 0x04];
+            result[k] ^= looksup[a[i] & 0x08];
+            k ++;
+/*
             tmp = 1;
             k ++;
             for(unsigned char j = 0; j < 4; j++){
@@ -327,6 +404,7 @@ unsigned char * square(unsigned char * a){
                 tmp <<= 1;
             }
             k ++;
+            */
     }
     reduce(result);
     copyPoly(a, result);
@@ -349,69 +427,6 @@ unsigned char * square(unsigned char * a){
     return (memcmp(tmp.x, p->x, SIZE) == 0 && memcmp(tmp.y, p->y, SIZE) == 0);
 }
 
-/*void addPoints(Point * P, Point * Q, Point * R){
-    if(isInfinity(P)){
-        copyPoly(R->x, Q->x);
-        copyPoly(R->y, Q->y);
-        return;
-    }else if(isInfinity(Q)){
-        copyPoly(R->x, P->x);
-        copyPoly(R->y, P->y);
-        return;        
-    }else if(isNeg(P,Q) || isNeg(Q,P)){
-        copyPoly(R->x, I_x);
-        copyPoly(R->y, I_y);
-        return;
-    }
-    unsigned char lambda[SIZE];
-    if (isEqualPoly(P->x, Q->x) && isEqualPoly(P->y, Q->y)){ // P == Q
-        unsigned char inv_qx[SIZE];
-        cleanPoly(inv_qx);
-        inverse(p, Q->x, inv_qx); // 1/xQ
-        unsigned char mul_tmp[SIZE];
-        cleanPoly(mul_tmp);
-        mulRed(Q->y, inv_qx, mul_tmp); // yQ*(1/xQ)
-        unsigned char addqx[SIZE];
-        copyPoly(addqx,Q->x);
-        copyPoly(lambda, add(addqx, mul_tmp));
-    }else{                                                   // P != Q
-        unsigned char tmp_top[SIZE];
-        cleanPoly(tmp_top);
-        add(tmp_top, P->y);
-        add(tmp_top, Q->y); // yP + yQ
-        unsigned char tmp_down[SIZE];
-        cleanPoly(tmp_down);
-        add(tmp_down, P->x);
-        add(tmp_down, Q->x); // xP + xQ
-        unsigned char inv[SIZE];
-        cleanPoly(inv);
-        inverse(p, tmp_down, inv); // 1/(xP + xQ)
-        unsigned char result[SIZE];
-        cleanPoly(result);
-        mulRed(tmp_top, inv, result); // 1/(xP + xQ) * (yP + yQ)
-        copyPoly(lambda, result); // lambda = 1/(xP + xQ) * yP + yQ
-    }
-    unsigned char cpa[SIZE];
-    copyPoly(cpa, POLA);
-    unsigned char sqlam[SIZE];
-    copyPoly(sqlam, lambda);
-    //xR = a + λ^2 + λ + xP + xQ
-    add(cpa, lambda); // a* = a + λ
-    add(cpa, square(sqlam)); // a** = a* + λ^2
-    add(cpa, P->x); // a*** = a** + P->x
-    add(cpa, Q->x); // a*** = a** + Q->x
-    copyPoly(R->x,cpa);
-    // yR = (xQ + xR) · λ + xR + yQ
-    unsigned char cpq[SIZE];
-    unsigned char rsl[SIZE];
-    cleanPoly(rsl);
-    copyPoly(cpq, Q->x); // xQ
-    add(cpq, R->x); // xQ + xR
-    mulRed(cpq, lambda, rsl); // (xQ + xR) · λ
-    add(rsl,R->x); // xR
-    add(rsl,Q->y); // yQ
-    copyPoly(R->y,rsl);
-}*/
 
 void addPoints(Point * P, Point * Q, Point * R){
     if(isInfinity(P)){
