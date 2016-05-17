@@ -158,12 +158,12 @@ inline void addfromto(unsigned char * a, unsigned char * b, unsigned char from, 
         a[i] = a[i] ^ b[i - from];
     }
 }
-
-inline unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char * res){ //corrected
+inline unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char * res){ // changed
     //unsigned char res[SIZE];
-    cleanPoly(res);
+
     unsigned char tmpa[SIZE];
     copyPoly(tmpa, a);
+    cleanPoly(res);
     unsigned char j = 0x01;
     for(unsigned char k = 0; k < 8; k++){
         for(unsigned char i = 0; i < SIZE; i++){
@@ -289,41 +289,53 @@ unsigned char isBiggerThanOne(unsigned char * b){ // corrected
     return true;*/
 }
 
+void doperm( unsigned char *tmp_a, unsigned char * tmp_b, unsigned char * tmp, unsigned char * q, unsigned char * t, unsigned char * x0, unsigned char * x1, unsigned char * restmp, unsigned char * res){
+     while (isBiggerThanOne(tmp_a)) {
+        //cleanPoly(tmp);
+        cleanPoly(q);
+        divMod(tmp_a, tmp_b, tmp, q);// q = a / b;
 
-void inverse(unsigned char * a, unsigned char * b, unsigned char * res){
+        copyPoly(tmp_a, tmp_b); // a = t;
+        copyPoly(tmp_b, tmp);// b = tmp;
+        copyPoly(t, x0); //t = x0;
+        //cleanPoly(restmp);
+        //cleanPoly(restmp);
+        mul(x0, q, x0);
+        //x0 = restmp;
+        add(x0, x1);
+        //copyPoly(x0, restmp); // x0 = x1 + q * x0;
+        //x0 = x1;
+        //(unsigned char*)x0 = (unsigned char*)add(x1, mul(q, x0, restmp));
+        copyPoly(x1, t); //x1 = t;
+        //x1 = p;
+    }
+    copyPoly(res, x1);
+}
+
+inline void inverse(unsigned char * a, unsigned char * b, unsigned char * res){
     unsigned char tmp_a[SIZE];
     copyPoly(tmp_a, a);
     unsigned char tmp_b[SIZE];
     copyPoly(tmp_b, b);
 
-  unsigned char b0[SIZE], t[SIZE], q[SIZE];
-    copyPoly(b0,b);
+  unsigned char t[SIZE];
+  unsigned char q[SIZE];
+    //copyPoly(b0,b);
     cleanPoly(q);
-    unsigned char x0[SIZE], x1[SIZE];
+    unsigned char x0[SIZE];
+    unsigned char x1[SIZE];
+    //unsigned char * x1 = NULL;
     cleanPoly(x0);
     x0[0] = 0x01;
     cleanPoly(x1);
+    unsigned char restmp[SIZE];
+    unsigned char tmp[SIZE];
 
-  if (isOne(b)) return;
-  while (isBiggerThanOne(a)) {
-        unsigned char tmp[SIZE];
-        cleanPoly(tmp);
-        cleanPoly(q);
-        divMod(a, b, tmp, q);// q = a / b;
-        copyPoly(t, b);// t = b;
-        copyPoly(b, tmp);// b = tmp;
-        copyPoly(a, t); // a = t;
-    copyPoly(t, x0); //t = x0;
-        unsigned char restmp[SIZE];
-        cleanPoly(restmp);
-        copyPoly(x0, add(x1, mul(q, x0, restmp))); // x0 = x1 + q * x0;
-    copyPoly(x1, t); //x1 = t;
-    }
-  copyPoly(res, x1);
-  copyPoly(a,tmp_a);
-    copyPoly(b,tmp_b);
+  if (isOne(tmp_b)) return;
+  doperm(tmp_a, tmp_b, tmp, q, t, x0, x1, restmp, res);
+  //copyPoly(a,tmp_a);
+    //copyPoly(b,tmp_b);
 }
-
 
 
 unsigned char * mulRed(unsigned char * a, unsigned char * b, unsigned char * result){

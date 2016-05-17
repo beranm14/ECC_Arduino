@@ -34,6 +34,8 @@ unsigned char * getPoly(unsigned int a, unsigned char * poly);
 
 void divMod(unsigned char * a, unsigned char * b, unsigned char * m, unsigned char * d);
 
+void doperm( unsigned char *tmp_a, unsigned char * tmp_b, unsigned char * tmp, unsigned char * q, unsigned char * t, unsigned char * x0, unsigned char * x1, unsigned char * restmp, unsigned char * res);
+
  unsigned char isOne(unsigned char * b);
 
 unsigned char * reduce(unsigned char * c);

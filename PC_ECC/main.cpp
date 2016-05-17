@@ -547,9 +547,10 @@ inline void addfromto(unsigned char * a, unsigned char * b, unsigned char from, 
 
 inline unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char * res){ // changed
     //unsigned char res[SIZE];
-    cleanPoly(res);
+
     unsigned char tmpa[SIZE];
     copyPoly(tmpa, a);
+    cleanPoly(res);
     unsigned char j = 0x01;
     for(unsigned char k = 0; k < 8; k++){
         for(unsigned char i = 0; i < SIZE; i++){
@@ -562,6 +563,7 @@ inline unsigned char * mul(unsigned char * a, unsigned char * b, unsigned char *
     }
     return res;
 }
+
 
 
 inline unsigned char * getPoly(unsigned int a, unsigned char * poly){ // changed
@@ -692,24 +694,26 @@ inline unsigned char isEqualPoly(unsigned char * a, unsigned char * b){
 }
 
 void doperm( unsigned char *tmp_a, unsigned char * tmp_b, unsigned char * tmp, unsigned char * q, unsigned char * t, unsigned char * x0, unsigned char * x1, unsigned char * restmp, unsigned char * res){
-    while (isBiggerThanOne(tmp_a)) {
+     while (isBiggerThanOne(tmp_a)) {
         //cleanPoly(tmp);
         cleanPoly(q);
         divMod(tmp_a, tmp_b, tmp, q);// q = a / b;
-        copyPoly(t, tmp_b);// t = b;
+
+        copyPoly(tmp_a, tmp_b); // a = t;
         copyPoly(tmp_b, tmp);// b = tmp;
-        copyPoly(tmp_a, t); // a = t;
         copyPoly(t, x0); //t = x0;
         //cleanPoly(restmp);
-        mul(q, x0, restmp);
-        add(x1, restmp);
-        copyPoly(x0, x1); // x0 = x1 + q * x0;
+        //cleanPoly(restmp);
+        mul(x0, q, x0);
+        //x0 = restmp;
+        add(x0, x1);
+        //copyPoly(x0, restmp); // x0 = x1 + q * x0;
         //x0 = x1;
         //(unsigned char*)x0 = (unsigned char*)add(x1, mul(q, x0, restmp));
-		copyPoly(x1, t); //x1 = t;
-		//x1 = p;
+        copyPoly(x1, t); //x1 = t;
+        //x1 = p;
     }
-	copyPoly(res, x1);
+    copyPoly(res, x1);
 }
 
 inline void inverse(unsigned char * a, unsigned char * b, unsigned char * res){
@@ -1034,7 +1038,7 @@ int main(int argc, char *argv[])
 */
 
 
-    if(argc < 2){
+   if(argc < 2){
         cout << "None port given" << endl;
         return 1;
     }
