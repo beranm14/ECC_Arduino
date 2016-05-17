@@ -691,11 +691,25 @@ inline unsigned char isEqualPoly(unsigned char * a, unsigned char * b){
     return true;*/
 }
 
-inline void swappo(unsigned char * a, unsigned char * b){
-    unsigned char * tmp;
-    tmp = a;
-    a = b;
-    b = tmp;
+void doperm( unsigned char *tmp_a, unsigned char * tmp_b, unsigned char * tmp, unsigned char * q, unsigned char * t, unsigned char * x0, unsigned char * x1, unsigned char * restmp, unsigned char * res){
+    while (isBiggerThanOne(tmp_a)) {
+        //cleanPoly(tmp);
+        cleanPoly(q);
+        divMod(tmp_a, tmp_b, tmp, q);// q = a / b;
+        copyPoly(t, tmp_b);// t = b;
+        copyPoly(tmp_b, tmp);// b = tmp;
+        copyPoly(tmp_a, t); // a = t;
+        copyPoly(t, x0); //t = x0;
+        //cleanPoly(restmp);
+        mul(q, x0, restmp);
+        add(x1, restmp);
+        copyPoly(x0, x1); // x0 = x1 + q * x0;
+        //x0 = x1;
+        //(unsigned char*)x0 = (unsigned char*)add(x1, mul(q, x0, restmp));
+		copyPoly(x1, t); //x1 = t;
+		//x1 = p;
+    }
+	copyPoly(res, x1);
 }
 
 inline void inverse(unsigned char * a, unsigned char * b, unsigned char * res){
@@ -704,7 +718,8 @@ inline void inverse(unsigned char * a, unsigned char * b, unsigned char * res){
     unsigned char tmp_b[SIZE];
     copyPoly(tmp_b, b);
 
-	unsigned char  t[SIZE], q[SIZE];
+	unsigned char t[SIZE];
+	unsigned char q[SIZE];
     //copyPoly(b0,b);
     cleanPoly(q);
     unsigned char x0[SIZE];
@@ -716,24 +731,10 @@ inline void inverse(unsigned char * a, unsigned char * b, unsigned char * res){
     unsigned char restmp[SIZE];
     unsigned char tmp[SIZE];
 
-	if (isOne(b)) return;
-	while (isBiggerThanOne(a)) {
-        cleanPoly(tmp);
-        cleanPoly(q);
-        divMod(a, b, tmp, q);// q = a / b;
-        copyPoly(t, b);// t = b;
-        copyPoly(b, tmp);// b = tmp;
-        copyPoly(a, t); // a = t;
-        copyPoly(t, x0); //t = x0;
-        cleanPoly(restmp);
-        copyPoly(x0, add(x1, mul(q, x0, restmp))); // x0 = x1 + q * x0;
-		//x0 = add(x1, mul(q, x0, restmp));
-		copyPoly(x1, t); //x1 = t;
-		//x1 = t;
-    }
-	copyPoly(res, x1);
-	copyPoly(a,tmp_a);
-    copyPoly(b,tmp_b);
+	if (isOne(tmp_b)) return;
+	doperm(tmp_a, tmp_b, tmp, q, t, x0, x1, restmp, res);
+	//copyPoly(a,tmp_a);
+    //copyPoly(b,tmp_b);
 }
 
 
@@ -840,7 +841,7 @@ inline bool isNeg(Point *p, Point *q)
     return (memcmp(tmp.x, p->x, SIZE) == 0 && memcmp(tmp.y, p->y, SIZE) == 0);
 }
 
-void addPoints(Point * P, Point * Q, Point * R){
+void addPoints(Point * P, Point * Q, Point * R){ // changed changed
     if(isInfinity(P)){
         copyPoly(R->x, Q->x);
         copyPoly(R->y, Q->y);
@@ -863,24 +864,24 @@ void addPoints(Point * P, Point * Q, Point * R){
         unsigned char inv_qx[SIZE];
         cleanPoly(inv_qx);
         inverse(p, Q->x, inv_qx); // 1/xQ
-        cleanPoly(mul_tmp);
+        //cleanPoly(mul_tmp);
         mulRed(Q->y, inv_qx, mul_tmp); // yQ*(1/xQ)
         copyPoly(addqx,Q->x);
         //copyPoly(lambda, add(addqx, mul_tmp));
         lambda = add(addqx, mul_tmp);
     }else{                                                   // P != Q
         unsigned char tmp_top[SIZE];
-        cleanPoly(tmp_top);
-        add(tmp_top, P->y);
+        //cleanPoly(tmp_top);
+        copyPoly(tmp_top, P->y);
         add(tmp_top, Q->y); // yP + yQ
         unsigned char tmp_down[SIZE];
-        cleanPoly(tmp_down);
-        add(tmp_down, P->x);
+        //cleanPoly(tmp_down);
+        copyPoly(tmp_down, P->x);
         add(tmp_down, Q->x); // xP + xQ
         unsigned char inv[SIZE];
-        cleanPoly(inv);
+        //cleanPoly(inv);
         inverse(p, tmp_down, inv); // 1/(xP + xQ)
-        cleanPoly(result);
+        //cleanPoly(result);
         mulRed(tmp_top, inv, result); // 1/(xP + xQ) * (yP + yQ)
         lambda = result; // lambda = 1/(xP + xQ) * yP + yQ
     }
